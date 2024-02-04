@@ -95,7 +95,7 @@ async fn query_person() -> impl Responder {
 
     let result: Result<Vec<Value>, Error> = db.select("person").await;
     match result {
-        Ok(records) => format!("{:?}", records),
+        Ok(records) => format!("{}", serde_json::json!(records)),
         Err(e) => format!("Error querying person: {}", e),
     }
 }
