@@ -76,7 +76,10 @@ async fn insert_person() -> impl Responder {
 async fn query_person() -> impl Responder {
     let db = match Surreal::new::<Ws>("0.0.0.0:8000").await {
         Ok(db) => db,
-        Err(e) => return format!("Error connecting to database: {}", e),
+        Err(e) => {
+            return HttpResponse::InternalServerError()
+                .body(format!("Error connecting to database: {}", e))
+        }
     };
 
     if let Err(e) = db
@@ -86,16 +89,16 @@ async fn query_person() -> impl Responder {
         })
         .await
     {
-        return format!("Error signing in: {}", e);
+        return HttpResponse::InternalServerError().body(format!("Error signing in: {}", e));
     }
 
     if let Err(e) = db.use_ns("test").use_db("test").await {
-        return format!("Error selecting namespace/database: {}", e);
+        return HttpResponse::InternalServerError()
+            .body(format!("Error selecting namespace/database: {}", e));
     }
-
     let result: Result<Vec<Value>, Error> = db.select("person").await;
     match result {
-        Ok(records) => format!("{}", serde_json::json!(records)),
-        Err(e) => format!("Error querying person: {}", e),
+        Ok(records) => HttpResponse::Ok().json(records),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Error querying person: {}", e)),
     }
 }
