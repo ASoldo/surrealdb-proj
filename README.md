@@ -21,7 +21,7 @@ This command initializes a new SurrealDB instance using file-based storage.
 
 ### Setting Up the Project
 
-1. **Clone the repository** (assuming it's available on GitHub or another VCS):
+1. **Clone the repository**
 
    ```sh
    git clone https://github.com/ASoldo/surrealdb-proj.git
