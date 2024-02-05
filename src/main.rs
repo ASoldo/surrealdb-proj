@@ -20,15 +20,32 @@ struct SurrealData {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("Starting Actix server on http://127.0.0.1:8080");
-    let db = Surreal::new::<Ws>("0.0.0.0:8000")
+
+    let db = match Surreal::new::<Ws>("0.0.0.0:8000").await {
+        Ok(db) => db,
+        Err(e) => {
+            eprintln!("Failed to connect to the database: {}", e);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Database connection failed",
+            ));
+        }
+    };
+
+    if let Err(e) = db
+        .signin(Root {
+            username: "root",
+            password: "root",
+        })
         .await
-        .expect("Error connecting to database");
-    db.signin(Root {
-        username: "root",
-        password: "root",
-    })
-    .await
-    .expect("Error signing in");
+    {
+        eprintln!("Failed to sign in to the database: {}", e);
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Database signin failed",
+        ));
+    }
+
     let db = web::Data::new(SurrealData { db: Mutex::new(db) });
 
     HttpServer::new(move || {
