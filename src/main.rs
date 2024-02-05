@@ -1,7 +1,8 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
-use surrealdb::engine::remote::ws::Ws;
+use std::sync::Mutex;
+use surrealdb::engine::remote::ws::{Client, Ws};
 use surrealdb::opt::auth::Root;
 use surrealdb::{Error, Surreal};
 
@@ -12,11 +13,27 @@ struct Person {
     marketing: bool,
 }
 
+struct SurrealData {
+    db: Mutex<Surreal<Client>>,
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("Starting Actix server on http://127.0.0.1:8080");
-    HttpServer::new(|| {
+    let db = Surreal::new::<Ws>("0.0.0.0:8000")
+        .await
+        .expect("Error connecting to database");
+    db.signin(Root {
+        username: "root",
+        password: "root",
+    })
+    .await
+    .expect("Error signing in");
+    let db = web::Data::new(SurrealData { db: Mutex::new(db) });
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(db.clone())
             .service(index)
             .service(insert_person)
             .service(query_person)
@@ -32,26 +49,16 @@ async fn index() -> impl Responder {
 }
 
 #[get("/insert_person")]
-async fn insert_person() -> impl Responder {
-    let db = match Surreal::new::<Ws>("0.0.0.0:8000").await {
-        Ok(db) => db,
-        Err(e) => {
-            return HttpResponse::InternalServerError()
-                .body(format!("Error connecting to database: {}", e))
+async fn insert_person(db: web::Data<SurrealData>) -> impl Responder {
+    let db_lock = match db.db.lock() {
+        Ok(lock) => lock,
+        Err(_) => {
+            return HttpResponse::ServiceUnavailable()
+                .body("Service is temporarily unavailable. Please try again later.")
         }
     };
 
-    if let Err(e) = db
-        .signin(Root {
-            username: "root",
-            password: "root",
-        })
-        .await
-    {
-        return HttpResponse::InternalServerError().body(format!("Error signing in: {}", e));
-    }
-
-    if let Err(e) = db.use_ns("test").use_db("test").await {
+    if let Err(e) = db_lock.use_ns("test").use_db("test").await {
         return HttpResponse::InternalServerError()
             .body(format!("Error selecting namespace/database: {}", e));
     }
@@ -62,7 +69,7 @@ async fn insert_person() -> impl Responder {
         marketing: true,
     };
 
-    let result: Result<Vec<Value>, Error> = db.create("person").content(&person).await;
+    let result: Result<Vec<Value>, Error> = db_lock.create("person").content(&person).await;
 
     match result {
         Ok(response) => HttpResponse::Ok().json(response),
@@ -73,30 +80,22 @@ async fn insert_person() -> impl Responder {
 }
 
 #[get("/query_person")]
-async fn query_person() -> impl Responder {
-    let db = match Surreal::new::<Ws>("0.0.0.0:8000").await {
-        Ok(db) => db,
-        Err(e) => {
-            return HttpResponse::InternalServerError()
-                .body(format!("Error connecting to database: {}", e))
+async fn query_person(db: web::Data<SurrealData>) -> impl Responder {
+    let db_lock = match db.db.lock() {
+        Ok(lock) => lock,
+        Err(_) => {
+            return HttpResponse::ServiceUnavailable()
+                .body("Service is temporarily unavailable. Please try again later.")
         }
     };
 
-    if let Err(e) = db
-        .signin(Root {
-            username: "root",
-            password: "root",
-        })
-        .await
-    {
-        return HttpResponse::InternalServerError().body(format!("Error signing in: {}", e));
-    }
-
-    if let Err(e) = db.use_ns("test").use_db("test").await {
+    if let Err(e) = db_lock.use_ns("test").use_db("test").await {
         return HttpResponse::InternalServerError()
             .body(format!("Error selecting namespace/database: {}", e));
     }
-    let result: Result<Vec<Value>, Error> = db.select("person").await;
+
+    let result: Result<Vec<Value>, Error> = db_lock.select("person").await;
+
     match result {
         Ok(records) => HttpResponse::Ok().json(records),
         Err(e) => HttpResponse::InternalServerError().body(format!("Error querying person: {}", e)),
