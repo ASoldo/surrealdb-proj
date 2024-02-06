@@ -32,7 +32,6 @@ async fn main() -> std::io::Result<()> {
     println!("Signed in!");
 
     println!("Setting up the namespace and database...");
-
     DB.use_ns("test")
         .use_db("test")
         .await
