@@ -93,4 +93,4 @@ The project's dependencies are defined in `Cargo.toml`:
 
 ### Profiling
 
-Use `cargo flamegraph` to profile application and generate flamegraph
+Use `cargo flamegraph --dev` to profile application and generate flamegraph
