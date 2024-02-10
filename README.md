@@ -90,3 +90,7 @@ The project's dependencies are defined in `Cargo.toml`:
 - `actix-web` for the web server framework.
 - `serde` and `serde_json` for serializing and deserializing the JSON data.
 - `surrealdb` for interacting with the SurrealDB database.
+
+### Profiling
+
+Use `cargo flamegraph` to profile application and generate flamegraph
