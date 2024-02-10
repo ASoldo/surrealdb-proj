@@ -34,7 +34,13 @@ This command initializes a new SurrealDB instance using file-based storage.
    cargo build
    ```
 
-3. **Run the Actix-Web server**:
+3. **Start the SurrealDB**
+
+   ```sh
+   surreal start file:db-demo --user root --password root
+   ```
+
+4. **Run the Actix-Web server**:
 
    ```sh
    cargo run
