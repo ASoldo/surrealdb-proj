@@ -91,6 +91,12 @@ The project's dependencies are defined in `Cargo.toml`:
 - `serde` and `serde_json` for serializing and deserializing the JSON data.
 - `surrealdb` for interacting with the SurrealDB database.
 
+### Connect to local SurrealDB
+
+```bash
+surreal sql --endpoint http://127.0.0.1:8000 --username root --password root --namespace test --database tes
+```
+
 ### Profiling
 
-Use `cargo flamegraph --dev` to profile application and generate flamegraph
+Use `cargo flamegraph --dev -- --no-rosegment` to profile application and generate flamegraph

@@ -1,2 +1,6 @@
 /target
 /demo-db
+perf.data
+perf.data.old
+flamegraph.svg
+history.txt
