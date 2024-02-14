@@ -91,12 +91,40 @@ The project's dependencies are defined in `Cargo.toml`:
 - `serde` and `serde_json` for serializing and deserializing the JSON data.
 - `surrealdb` for interacting with the SurrealDB database.
 
+### Start TiKV
+
+```bash
+tiup playground --tag surrealdb --mode tikv-slim --pd 1 --kv 1
+```
+
+or
+
+```bash
+tiup playground --tag surrealdb --pd 1 --kv 1
+```
+
+### Start SurrealDB with TiKV
+
+```bash
+surreal start --log trace tikv://127.0.0.1:2379
+```
+
+### Start SurrealDB with local db file
+
+```bash
+surreal start file:demo-db --user root --password root
+```
+
 ### Connect to local SurrealDB
 
 ```bash
-surreal sql --endpoint http://127.0.0.1:8000 --username root --password root --namespace test --database tes
+surreal sql --endpoint http://127.0.0.1:8000 --username root --password root --namespace test --database test
 ```
 
 ### Profiling
 
-Use `cargo flamegraph --dev -- --no-rosegment` to profile application and generate flamegraph
+Use to profile application and generate flamegraph
+
+```bash
+cargo flamegraph --dev -- --no-rosegment
+```
